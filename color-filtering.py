@@ -3,16 +3,20 @@ import cv2
 import numpy as np
 
 # configurable vars
-projectile_pos = (384, 117);
+projectile_pos = (42,52)
 
 # TEAM COLORS #HSV
 teams = [
-	(0, 190, 1, 10, 255, 255) # RED
+	(-15, 50, 50, 15, 255, 255), # RED
+	(15, 50, 50, 45, 255, 255), # YELLOW
+	(45, 50, 50, 75, 255, 255), # GREEN
+	(75, 50, 50, 105, 255, 255), # CYAN
+	(105, 50, 50, 135, 255, 255), # BLUE
+	(135, 50, 50, 165, 255, 255) # FUCHSIA
 ]
 
 # PLAYER COLORS #HSV
 player_colors = [
-	(0, 0, 0, 89, 255, 81), # BLACK
 	(0, 190, 190, 9, 255, 255),
 	(9, 190, 190, 18, 255, 255),
 	(18, 190, 190, 27, 255, 255),
@@ -39,7 +43,7 @@ def nothing(x):
 	pass
 
 def getPlayerInPosition(contour):
-	ret = ()
+	ret = (None, None, None)
 	x, y, w, h = cv2.boundingRect(contour)
 	roi = frame[y : y + h, x : x + w]
 	#roi_contour = np.full(contour.shape, (x,y), dtype = int)
@@ -58,6 +62,7 @@ def getPlayerInPosition(contour):
 	# return total of white pixels
 	indexes, area_mask_details = np.unique(cnt_region_roi_mask, return_counts = True)
 	indexes = np.where(indexes == 255)[0]
+	
 	if indexes.size <= 0:  # no white pixels found
 		return ret
 
@@ -79,14 +84,15 @@ def getPlayerInPosition(contour):
 		# count player color coverage
 		indexes, pc_area_white_counts = np.unique(diff, return_counts = True)
 		indexes = np.where(indexes == 255)[0]
+		
 		if indexes.size <= 0:
-			continue
+			continue # not a single color found for this color (white color in the mask)
 
 		pc_pixels_coverage = pc_area_white_counts[indexes[0]]
 		percent = (pc_pixels_coverage / max_pixels_coverage) * 100
 
 		if ret and percent <= ret[1]:
-			continue
+			continue # we have already a better candidate for player color
 
 		ret = (idx, percent, diff)
 		
@@ -100,83 +106,92 @@ def getPlayerInPosition(contour):
 		#cv2.imshow('PLAYER COLOR pc_mask', pc_mask)
 		#cv2.imshow('PLAYER COLOR contour_region', contour_region)
 		#cv2.imshow('PLAYER COLOR diff', diff)
-		print 'Player', ret[0], 'color pixels coverage:', pc_pixels_coverage, ' from', max_pixels_coverage, '(', percent, '%) color:', player_color
+		print 'Player', idx, 'color pixels coverage:', pc_pixels_coverage, ' from', max_pixels_coverage, '(', percent, '%) color:', player_color
 
 	return ret
 
 
 #cap = cv2.VideoCapture(0)
-frame = cv2.imread('futebol_crop.jpg', cv2.IMREAD_COLOR)
+frame = cv2.imread('./photos/test1/P_20160625_152818_001_crop.jpg', cv2.IMREAD_COLOR)
 
-# set initial values
-hmin, smin, vmin, hmax, smax, vmax = teams[0]
 kernel = np.ones((5,5), np.uint8)
 
-cv2.namedWindow('result')
-cv2.createTrackbar('hmin', 'result', hmin, 179, nothing)
-cv2.createTrackbar('smin', 'result', smin, 255, nothing)
-cv2.createTrackbar('vmin', 'result', vmin, 255, nothing)
-cv2.createTrackbar('hmax', 'result', hmax, 179, nothing)
-cv2.createTrackbar('smax', 'result', smax, 255, nothing)
-cv2.createTrackbar('vmax', 'result', vmax, 255, nothing)
+cv2.namedWindow('result', flags = cv2.WINDOW_NORMAL)
+cv2.createTrackbar('hmin', 'result', 0, 179, nothing)
+cv2.createTrackbar('smin', 'result', 0, 255, nothing)
+cv2.createTrackbar('vmin', 'result', 0, 255, nothing)
+cv2.createTrackbar('hmax', 'result', 0, 179, nothing)
+cv2.createTrackbar('smax', 'result', 0, 255, nothing)
+cv2.createTrackbar('vmax', 'result', 0, 255, nothing)
 
 while True:
 	#_, frame = cap.read()
 	hsv = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
 
-	#color = np.uint8([[[0,0,255]]]) # Blue Green Red
-	#hsv_color = cv2.cvtColor(color,cv2.COLOR_BGR2HSV)
-	#print hsv_color
-
-	# get info from track bar and appy to result
-	hmin = cv2.getTrackbarPos('hmin','result')
-	smin = cv2.getTrackbarPos('smin','result')
-	vmin = cv2.getTrackbarPos('vmin','result')
-	hmax = cv2.getTrackbarPos('hmax','result')
-	smax = cv2.getTrackbarPos('smax','result')
-	vmax = cv2.getTrackbarPos('vmax','result')
-
-	# hsv hue sat value
-	lower_color = np.array([hmin, smin, vmin])
-	upper_color = np.array([hmax, smax, vmax])
-
-	mask = cv2.inRange(hsv, lower_color, upper_color)
-	res = cv2.bitwise_and(frame, frame, mask = mask)
-
-	#erosion = cv2.erode(mask, kernel, iterations = 1)
-	dilation = cv2.dilate(mask, kernel, iterations = 1)
-
-	# opening remove false positives from background
-	#opening = cv2.morphologyEx(mask, cv2.MORPH_OPEN, kernel)
-
-	# Closing is reverse of Opening, Dilation followed by Erosion.
-	# It is useful in closing small holes inside the foreground
-	# objects, or small black points on the object.
-	closing = cv2.morphologyEx(dilation, cv2.MORPH_CLOSE, kernel)
-
-	_, contourned = cv2.threshold(closing, 127, 255, cv2.THRESH_BINARY)
-	contours, hierarchy = cv2.findContours(contourned, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
-	
-	# process countours
-	for contour in list(contours):
-		point_inside = cv2.pointPolygonTest(contour,(projectile_pos), False)
-		if point_inside == -1:  # -1 outside countour, 0 on contour, 1 inside
-			continue
+	for team_color_index, team_color in enumerate(teams):
 		
-		idx, percent, player_mask = getPlayerInPosition(contour)
+		# set initial values
+		hmin, smin, vmin, hmax, smax, vmax = team_color
+		cv2.setTrackbarPos('hmin', 'result', hmin)
+		cv2.setTrackbarPos('smin', 'result', smin)
+		cv2.setTrackbarPos('vmin', 'result', vmin)
+		cv2.setTrackbarPos('hmax', 'result', hmax)
+		cv2.setTrackbarPos('smax', 'result', smax)
+		cv2.setTrackbarPos('vmax', 'result', vmax)
 
-	# draw contours
-	#cv2.drawContours(contourned, contours, -1, (128,255,0), 1)
+		# hsv hue sat value
+		lower_color = np.array([hmin, smin, vmin])
+		upper_color = np.array([hmax, smax, vmax])
 
-	#cv2.imshow('frame', frame)
-	cv2.imshow('mask', mask)
-	#cv2.imshow('dilation', dilation)
-	#cv2.imshow('erosion', erosion)
-	#cv2.imshow('opening', opening)
-	#cv2.imshow('closing', closing)
-	#cv2.imshow('contourned', contourned)
-	cv2.imshow('result', res)
-	cv2.imshow('player_mask', player_mask)
+		mask = cv2.inRange(hsv, lower_color, upper_color)
+		res = cv2.bitwise_and(frame, frame, mask = mask)
+
+		#erosion = cv2.erode(mask, kernel, iterations = 1)
+		dilation = cv2.dilate(mask, kernel, iterations = 1)
+
+		# opening remove false positives from background
+		#opening = cv2.morphologyEx(mask, cv2.MORPH_OPEN, kernel)
+
+		# Closing is reverse of Opening, Dilation followed by Erosion.
+		# It is useful in closing small holes inside the foreground
+		# objects, or small black points on the object.
+		closing = cv2.morphologyEx(dilation, cv2.MORPH_CLOSE, kernel)
+
+		_, contourned = cv2.threshold(closing, 127, 255, cv2.THRESH_BINARY)
+		contours, hierarchy = cv2.findContours(contourned, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+		
+		if not len(contours):
+			continue # not found any contour for current team
+		
+		# process countours
+		for contour in contours:
+			point_inside = cv2.pointPolygonTest(contour,(projectile_pos), False)
+			
+			if point_inside == -1:  # -1 outside countour, 0 on contour, 1 inside
+				continue
+			
+			idx, percent, player_mask = getPlayerInPosition(contour)
+			
+			print 'Found team color:', team_color, team_color_index
+			print 'Found player color:', idx
+
+			# draw contours
+			#cv2.drawContours(contourned, contours, -1, (128,255,0), 1)
+
+			cv2.namedWindow('frame', flags = cv2.WINDOW_NORMAL); cv2.imshow('frame', frame)
+			cv2.namedWindow('mask', flags = cv2.WINDOW_NORMAL); cv2.imshow('mask', mask)
+			cv2.namedWindow('dilation', flags = cv2.WINDOW_NORMAL); cv2.imshow('dilation', dilation)
+			#cv2.imshow('erosion', erosion); cv2.namedWindow('erosion', flags = cv2.WINDOW_NORMAL)
+			#cv2.namedWindow('opening', flags = cv2.WINDOW_NORMAL); cv2.imshow('opening', opening)
+			cv2.namedWindow('closing', flags = cv2.WINDOW_NORMAL); cv2.imshow('closing', closing)
+			cv2.namedWindow('contourned', flags = cv2.WINDOW_NORMAL); cv2.imshow('contourned', contourned)
+			cv2.imshow('result', res)
+
+			if idx == None:
+				continue # not found any matching player
+
+			cv2.imshow('player_mask', player_mask)
+
 
 	# check for ESC key
 	k = cv2.waitKey(5) & 0xFF

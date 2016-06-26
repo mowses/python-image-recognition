@@ -13,11 +13,14 @@ cv2.namedWindow('result')
 h,s,v = 100,100,100
 
 # Creating track bar
-cv2.createTrackbar('h', 'result',0,179,nothing)
-cv2.createTrackbar('s', 'result',0,255,nothing)
-cv2.createTrackbar('v', 'result',0,255,nothing)
+cv2.createTrackbar('hmin', 'result',0,179,nothing)
+cv2.createTrackbar('smin', 'result',0,255,nothing)
+cv2.createTrackbar('vmin', 'result',0,255,nothing)
+cv2.createTrackbar('hmax', 'result',255,179,nothing)
+cv2.createTrackbar('smax', 'result',255,255,nothing)
+cv2.createTrackbar('vmax', 'result',255,255,nothing)
 
-frame = cv2.imread('futebol_crop.jpg', cv2.IMREAD_COLOR)
+frame = cv2.imread('./photos/test1/P_20160625_152818_001_crop.jpg', cv2.IMREAD_COLOR)
 
 while(1):
 
@@ -27,13 +30,16 @@ while(1):
     hsv = cv2.cvtColor(frame,cv2.COLOR_BGR2HSV)
 
     # get info from track bar and appy to result
-    h = cv2.getTrackbarPos('h','result')
-    s = cv2.getTrackbarPos('s','result')
-    v = cv2.getTrackbarPos('v','result')
+    hmin = cv2.getTrackbarPos('hmin','result')
+    smin = cv2.getTrackbarPos('smin','result')
+    vmin = cv2.getTrackbarPos('vmin','result')
+    hmax = cv2.getTrackbarPos('hmax','result')
+    smax = cv2.getTrackbarPos('smax','result')
+    vmax = cv2.getTrackbarPos('vmax','result')
 
     # Normal masking algorithm
-    lower_blue = np.array([h,s,v])
-    upper_blue = np.array([180,255,255])
+    lower_blue = np.array([hmin,smin,vmin])
+    upper_blue = np.array([hmax,smax,vmax])
 
     mask = cv2.inRange(hsv,lower_blue, upper_blue)
 
