@@ -2,8 +2,23 @@ from __future__ import division
 import cv2
 import numpy as np
 
-# configurable vars
-projectile_pos = (42,52)
+# configurable vars X,Y
+projectiles_pos = [
+	(103,93),
+	(273,93),
+	(443,93),
+	(613,93),
+
+	(103,263),
+	(273,263),
+	(443,263),
+	(613,263),
+
+	(360,182),
+	(100,313),
+	(559,210),
+	(623,317)
+]
 
 # TEAM COLORS #HSV
 teams = [
@@ -15,32 +30,27 @@ teams = [
 	(135, 50, 50, 165, 255, 255) # FUCHSIA
 ]
 
-# PLAYER COLORS #HSV
-player_colors = [
-	(0, 190, 190, 9, 255, 255),
-	(9, 190, 190, 18, 255, 255),
-	(18, 190, 190, 27, 255, 255),
-	(27, 190, 190, 36, 255, 255),
-	(36, 190, 190, 45, 255, 255),
-	(45, 190, 190, 54, 255, 255),
-	(54, 190, 190, 63, 255, 255),
-	(63, 190, 190, 72, 255, 255),
-	(72, 190, 190, 81, 255, 255),
-	(81, 190, 190, 90, 255, 255),
-	(90, 190, 190, 99, 255, 255),
-	(99, 190, 190, 108, 255, 255),
-	(108, 190, 190, 117, 255, 255),
-	(117, 190, 190, 126, 255, 255),
-	(126, 190, 190, 135, 255, 255),
-	(135, 190, 190, 144, 255, 255),
-	(144, 190, 190, 153, 255, 255),
-	(153, 190, 190, 162, 255, 255),
-	(162, 190, 190, 171, 255, 255),
-	(171, 190, 190, 0, 255, 255)
+# AVAILABLE PLAYER COLORS #HSV
+available_player_colors = [
+	(-15, 50, 50, 15, 255, 255), # RED
+	(15, 50, 50, 45, 255, 255), # YELLOW
+	(45, 50, 50, 75, 255, 255), # GREEN
+	(75, 50, 50, 105, 255, 255), # CYAN
+	(105, 50, 50, 135, 255, 255), # BLUE
+	(135, 50, 50, 165, 255, 255) # FUCHSIA
 ]
 
 def nothing(x):
 	pass
+
+def displayProjectilesHitImage():
+	cv2.namedWindow('projectiles positions', flags = cv2.WINDOW_NORMAL)
+	hithsv = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
+	for projectile_pos in projectiles_pos:
+		hithsv[projectile_pos[1],projectile_pos[0]] = [0,255,255]
+
+	hithsv = cv2.cvtColor(hithsv, cv2.COLOR_HSV2BGR)
+	cv2.imshow('projectiles positions', hithsv)
 
 def getPlayerInPosition(contour):
 	ret = (None, None, None)
@@ -68,7 +78,7 @@ def getPlayerInPosition(contour):
 
 	max_pixels_coverage = area_mask_details[indexes[0]]
 	
-	for idx, player_color in enumerate(player_colors):
+	for idx, player_color in enumerate(available_player_colors):
 
 		# hsv hue sat value
 		pc_hmin, pc_smin, pc_vmin, pc_hmax, pc_smax, pc_vmax = player_color
@@ -106,13 +116,13 @@ def getPlayerInPosition(contour):
 		#cv2.imshow('PLAYER COLOR pc_mask', pc_mask)
 		#cv2.imshow('PLAYER COLOR contour_region', contour_region)
 		#cv2.imshow('PLAYER COLOR diff', diff)
-		print 'Player', idx, 'color pixels coverage:', pc_pixels_coverage, ' from', max_pixels_coverage, '(', percent, '%) color:', player_color
+		#print 'Player', idx, 'color pixels coverage:', pc_pixels_coverage, ' from', max_pixels_coverage, '(', percent, '%) color:', player_color
 
 	return ret
 
 
 #cap = cv2.VideoCapture(0)
-frame = cv2.imread('./photos/test1/P_20160625_152818_001_crop.jpg', cv2.IMREAD_COLOR)
+frame = cv2.imread('./photos/test1/test1.jpg', cv2.IMREAD_COLOR)
 
 kernel = np.ones((5,5), np.uint8)
 
@@ -124,11 +134,15 @@ cv2.createTrackbar('hmax', 'result', 0, 179, nothing)
 cv2.createTrackbar('smax', 'result', 0, 255, nothing)
 cv2.createTrackbar('vmax', 'result', 0, 255, nothing)
 
+# create projectiles hit image
+displayProjectilesHitImage()
+
+
 while True:
 	#_, frame = cap.read()
 	hsv = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
 
-	for team_color_index, team_color in enumerate(teams):
+	for team_color_index, team_color in enumerate([teams[1]]):
 		
 		# set initial values
 		hmin, smin, vmin, hmax, smax, vmax = team_color
@@ -144,10 +158,10 @@ while True:
 		upper_color = np.array([hmax, smax, vmax])
 
 		mask = cv2.inRange(hsv, lower_color, upper_color)
-		res = cv2.bitwise_and(frame, frame, mask = mask)
+		#res = cv2.bitwise_and(frame, frame, mask = mask)
 
 		#erosion = cv2.erode(mask, kernel, iterations = 1)
-		dilation = cv2.dilate(mask, kernel, iterations = 1)
+		#dilation = cv2.dilate(mask, kernel, iterations = 1)
 
 		# opening remove false positives from background
 		#opening = cv2.morphologyEx(mask, cv2.MORPH_OPEN, kernel)
@@ -155,31 +169,49 @@ while True:
 		# Closing is reverse of Opening, Dilation followed by Erosion.
 		# It is useful in closing small holes inside the foreground
 		# objects, or small black points on the object.
-		closing = cv2.morphologyEx(dilation, cv2.MORPH_CLOSE, kernel)
+		closing = cv2.morphologyEx(mask, cv2.MORPH_CLOSE, kernel)
 
 		_, contourned = cv2.threshold(closing, 127, 255, cv2.THRESH_BINARY)
 		contours, hierarchy = cv2.findContours(contourned, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
 		
-		if not len(contours):
-			continue # not found any contour for current team
-		
+		cv2.namedWindow('mask', flags = cv2.WINDOW_NORMAL); cv2.imshow('mask', mask)
+		#cv2.namedWindow('closing', flags = cv2.WINDOW_NORMAL); cv2.imshow('closing', closing)
+		cv2.drawContours(contourned, contours, -1, (128,255,0), 1)
+		cv2.namedWindow('contourned', flags = cv2.WINDOW_NORMAL); cv2.imshow('contourned', contourned)
+
+
 		# process countours
 		for contour in contours:
-			point_inside = cv2.pointPolygonTest(contour,(projectile_pos), False)
+			# hold projectiles quantity that hit the current contour
+			# because many projectiles can hit the same contour
+			projectiles_hit_contour = []
+
+			for projectile_pos in projectiles_pos:
+				point_inside = cv2.pointPolygonTest(contour,(projectile_pos), False)
 			
-			if point_inside == -1:  # -1 outside countour, 0 on contour, 1 inside
-				continue
+				if point_inside == -1:  # -1 outside countour, 0 on contour, 1 inside
+					continue
+
+				projectiles_hit_contour.append([projectile_pos])
+
+
+			# check if contour was hit by any projectile
+			if not len(projectiles_hit_contour):
+				continue # no projectiles hit contour
 			
 			idx, percent, player_mask = getPlayerInPosition(contour)
-			
-			print 'Found team color:', team_color, team_color_index
-			print 'Found player color:', idx
 
+			if idx is None:
+				continue
+			
+			print '=================='
+			print 'Found team color:', team_color, team_color_index
+			print 'Found player color:', idx, percent, available_player_colors[idx], 'inside contour', contour
+			continue
 			# draw contours
 			#cv2.drawContours(contourned, contours, -1, (128,255,0), 1)
 
 			cv2.namedWindow('frame', flags = cv2.WINDOW_NORMAL); cv2.imshow('frame', frame)
-			cv2.namedWindow('mask', flags = cv2.WINDOW_NORMAL); cv2.imshow('mask', mask)
 			cv2.namedWindow('dilation', flags = cv2.WINDOW_NORMAL); cv2.imshow('dilation', dilation)
 			#cv2.imshow('erosion', erosion); cv2.namedWindow('erosion', flags = cv2.WINDOW_NORMAL)
 			#cv2.namedWindow('opening', flags = cv2.WINDOW_NORMAL); cv2.imshow('opening', opening)
