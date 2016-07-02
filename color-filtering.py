@@ -1,4 +1,5 @@
 from __future__ import division
+from collections import OrderedDict
 import cv2
 import numpy as np
 
@@ -21,24 +22,24 @@ projectiles_pos = [
 ]
 
 # TEAM COLORS #HSV
-teams = [
-	(-15, 50, 50, 15, 255, 255), # RED
-	(15, 50, 50, 45, 255, 255), # YELLOW
-	(45, 50, 50, 75, 255, 255), # GREEN
-	(75, 50, 50, 105, 255, 255), # CYAN
-	(105, 50, 50, 135, 255, 255), # BLUE
-	(135, 50, 50, 165, 255, 255) # FUCHSIA
-]
+teams = OrderedDict({
+	'red': (-15, 50, 50, 15, 255, 255), # RED
+	'yellow': (15, 50, 50, 45, 255, 255), # YELLOW
+	'green': (45, 50, 50, 75, 255, 255), # GREEN
+	'cyan': (75, 50, 50, 105, 255, 255), # CYAN
+	'blue': (105, 50, 50, 135, 255, 255), # BLUE
+	'fuchsia': (135, 50, 50, 165, 255, 255) # FUCHSIA
+})
 
 # AVAILABLE PLAYER COLORS #HSV
-available_player_colors = [
-	(-15, 50, 50, 15, 255, 255), # RED
-	(15, 50, 50, 45, 255, 255), # YELLOW
-	(45, 50, 50, 75, 255, 255), # GREEN
-	(75, 50, 50, 105, 255, 255), # CYAN
-	(105, 50, 50, 135, 255, 255), # BLUE
-	(135, 50, 50, 165, 255, 255) # FUCHSIA
-]
+available_player_colors = OrderedDict({
+	'red': (-15, 50, 50, 15, 255, 255), # RED
+	'yellow': (15, 50, 50, 45, 255, 255), # YELLOW
+	'green': (45, 50, 50, 75, 255, 255), # GREEN
+	'cyan': (75, 50, 50, 105, 255, 255), # CYAN
+	'blue': (105, 50, 50, 135, 255, 255), # BLUE
+	'fuchsia': (135, 50, 50, 165, 255, 255) # FUCHSIA
+})
 
 def nothing(x):
 	pass
@@ -78,7 +79,7 @@ def getPlayerInPosition(contour):
 
 	max_pixels_coverage = area_mask_details[indexes[0]]
 	
-	for idx, player_color in enumerate(available_player_colors):
+	for (color_name, (idx, player_color)) in enumerate(available_player_colors.items()):
 
 		# hsv hue sat value
 		pc_hmin, pc_smin, pc_vmin, pc_hmax, pc_smax, pc_vmax = player_color
@@ -122,7 +123,7 @@ def getPlayerInPosition(contour):
 
 
 #cap = cv2.VideoCapture(0)
-frame = cv2.imread('./photos/test1/test1.jpg', cv2.IMREAD_COLOR)
+frame = cv2.imread('./photos/test2/test1.jpg', cv2.IMREAD_COLOR)
 
 kernel = np.ones((5,5), np.uint8)
 
@@ -142,8 +143,8 @@ while True:
 	#_, frame = cap.read()
 	hsv = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
 
-	for team_color_index, team_color in enumerate([teams[1]]):
-		
+	for (team_color_index, (name, team_color)) in enumerate([teams.items()[2]]):
+
 		# set initial values
 		hmin, smin, vmin, hmax, smax, vmax = team_color
 		cv2.setTrackbarPos('hmin', 'result', hmin)
