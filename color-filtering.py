@@ -29,6 +29,7 @@ projectiles_pos = [
 	(559,210),
 	(623,317)
 ]
+projectiles_pos = None
 
 # TEAM COLORS #HSV
 teams = {
@@ -89,6 +90,10 @@ def getWhitePixels(mask):
 	return area_mask_details[indexes[0]]
 
 def displayProjectilesHitImage():
+	
+	if not projectiles_pos:
+		return
+
 	cv2.namedWindow('projectiles positions', flags = cv2.WINDOW_NORMAL)
 	hithsv = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
 	for projectile_pos in projectiles_pos:
@@ -178,7 +183,7 @@ def getPlayerInPosition(contour):
 
 
 #cap = cv2.VideoCapture(0)
-frame = cv2.imread('./photos/test1.jpg', cv2.IMREAD_COLOR)
+frame = cv2.imread('./photos/test1/P_20160702_133915.jpg', cv2.IMREAD_COLOR)
 
 kernel = np.ones((5,5), np.uint8)
 
@@ -230,12 +235,16 @@ while True:
 		
 		# process contours
 		for contour in contours:
-			projectiles_hit_contour = getProjectilesThatHitContour(contour)
 
-			# check if contour was hit by any projectile
-			if not len(projectiles_hit_contour):
-				#print 'No projectiles hit this contour
-				continue # no projectiles hit contour
+			projectiles_hit_contour = []
+			
+			if projectiles_pos:
+				projectiles_hit_contour = getProjectilesThatHitContour(contour)
+
+				# check if contour was hit by any projectile
+				if not len(projectiles_hit_contour):
+					#print 'No projectiles hit this contour'
+					continue # no projectiles hit contour
 			
 			player_found = getPlayerInPosition(contour)
 
