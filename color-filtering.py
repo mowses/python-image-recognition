@@ -33,22 +33,22 @@ projectiles_pos = None
 
 # TEAM COLORS #HSV
 teams = {
-	'red': (-15, 50, 50, 15, 255, 255), # RED
-	'yellow': (15, 50, 50, 45, 255, 255), # YELLOW
-	'green': (45, 50, 50, 75, 255, 255), # GREEN
+	#'red': (-15, 50, 50, 15, 255, 255), # RED
+	#'yellow': (15, 50, 50, 45, 255, 255), # YELLOW
+	#'green': (45, 50, 50, 75, 255, 255), # GREEN
 	'cyan': (75, 50, 50, 105, 255, 255), # CYAN
-	'blue': (105, 50, 50, 135, 255, 255), # BLUE
-	'fuchsia': (135, 50, 50, 165, 255, 255) # FUCHSIA
+	#'blue': (105, 50, 50, 135, 255, 255), # BLUE
+	#'fuchsia': (135, 50, 50, 165, 255, 255) # FUCHSIA
 }
 
 # AVAILABLE PLAYER COLORS #HSV
 available_player_colors = {
-	'red': (-15, 50, 50, 15, 255, 255), # RED
-	'yellow': (15, 50, 50, 45, 255, 255), # YELLOW
+	#'red': (-15, 50, 50, 15, 255, 255), # RED
+	#'yellow': (15, 50, 50, 45, 255, 255), # YELLOW
 	'green': (45, 50, 50, 75, 255, 255), # GREEN
-	'cyan': (75, 50, 50, 105, 255, 255), # CYAN
-	'blue': (105, 50, 50, 135, 255, 255), # BLUE
-	'fuchsia': (135, 50, 50, 165, 255, 255) # FUCHSIA
+	#'cyan': (75, 50, 50, 105, 255, 255), # CYAN
+	#'blue': (105, 50, 50, 135, 255, 255), # BLUE
+	#'fuchsia': (135, 50, 50, 165, 255, 255) # FUCHSIA
 }
 
 def nothing(x):
@@ -170,13 +170,13 @@ def getPlayerInPosition(contour):
 		# get the average color inside mask
 		#mean = cv2.mean(roi, mask = diff)
 		
-		#cv2.imshow('PLAYER COLOR mask', mask)
-		#cv2.imshow('PLAYER COLOR roi', roi)
-		#cv2.imshow('PLAYER COLOR roi_mask', roi_mask)
-		#cv2.imshow('PLAYER COLOR cnt_region_roi_mask', cnt_region_roi_mask)
-		#cv2.imshow('PLAYER COLOR pc_mask', pc_mask)
-		#cv2.imshow('PLAYER COLOR contour_region', contour_region)
-		#cv2.imshow('PLAYER COLOR diff', diff)
+		cv2.imshow('PLAYER COLOR mask for ' + color_name, mask)
+		cv2.imshow('PLAYER COLOR roi for ' + color_name, roi)
+		cv2.imshow('PLAYER COLOR roi_mask for ' + color_name, roi_mask)
+		cv2.imshow('PLAYER COLOR cnt_region_roi_mask for ' + color_name, cnt_region_roi_mask)
+		cv2.imshow('PLAYER COLOR pc_mask for ' + color_name, pc_mask)
+		cv2.imshow('PLAYER COLOR contour_region for ' + color_name, contour_region)
+		cv2.imshow('PLAYER COLOR diff for ' + color_name, diff)
 		#print 'Player', idx, 'color pixels coverage:', player_color_area_coverage, ' from', white_coverage, '(', percent, '%) color:', player_color
 
 	return ret
