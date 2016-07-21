@@ -33,22 +33,22 @@ projectiles_pos = None
 
 # TEAM COLORS #HSV
 teams = {
-	#'red': (-15, 50, 50, 15, 255, 255), # RED
-	#'yellow': (15, 50, 50, 45, 255, 255), # YELLOW
-	#'green': (45, 50, 50, 75, 255, 255), # GREEN
+	'red': (-15, 50, 50, 15, 255, 255), # RED
+	'yellow': (15, 50, 50, 45, 255, 255), # YELLOW
+	'green': (45, 50, 50, 75, 255, 255), # GREEN
 	'cyan': (75, 50, 50, 105, 255, 255), # CYAN
-	#'blue': (105, 50, 50, 135, 255, 255), # BLUE
-	#'fuchsia': (135, 50, 50, 165, 255, 255) # FUCHSIA
+	'blue': (105, 50, 50, 135, 255, 255), # BLUE
+	'fuchsia': (135, 50, 50, 165, 255, 255) # FUCHSIA
 }
 
 # AVAILABLE PLAYER COLORS #HSV
 available_player_colors = {
-	#'red': (-15, 50, 50, 15, 255, 255), # RED
-	#'yellow': (15, 50, 50, 45, 255, 255), # YELLOW
+	'red': (-15, 50, 50, 15, 255, 255), # RED
+	'yellow': (15, 50, 50, 45, 255, 255), # YELLOW
 	'green': (45, 50, 50, 75, 255, 255), # GREEN
-	#'cyan': (75, 50, 50, 105, 255, 255), # CYAN
-	#'blue': (105, 50, 50, 135, 255, 255), # BLUE
-	#'fuchsia': (135, 50, 50, 165, 255, 255) # FUCHSIA
+	'cyan': (75, 50, 50, 105, 255, 255), # CYAN
+	'blue': (105, 50, 50, 135, 255, 255), # BLUE
+	'fuchsia': (135, 50, 50, 165, 255, 255) # FUCHSIA
 }
 
 def nothing(x):
@@ -181,9 +181,35 @@ def getPlayerInPosition(contour):
 
 	return ret
 
+def filterByTeamCoverage(players):
+	players_filtered = []
+
+	# now we apply a filter to remove lowest player team area coverage
+	# since the script could return more than one found player for the same projectile
+	# this happens because inRange could detect a player team color from a player color pattern
+	for (pi1, player1) in enumerate(players):
+		add = True
+		for (pi2, player2) in enumerate(players):
+			if pi1 == pi2:
+				continue
+
+			if player1['team']['coverage'] > player2['team']['coverage']:
+				continue
+
+			# check to see if any projectile in player1 is inside player2 projectiles
+			if not any(True for x in player1['projectiles'] if x in player2['projectiles']):
+				continue
+
+			add = False
+			break
+		
+		if add:
+			players_filtered.append(player1)
+
+	return players_filtered
 
 #cap = cv2.VideoCapture(0)
-frame = cv2.imread('./photos/test1/P_20160702_133915.jpg', cv2.IMREAD_COLOR)
+frame = cv2.imread('./photos/test3/P_20160702_133915.jpg', cv2.IMREAD_COLOR)
 
 kernel = np.ones((5,5), np.uint8)
 
@@ -251,6 +277,8 @@ while True:
 			if player_found is None:
 				continue
 
+			team_color_multiplier = 100 / player_found['team_color_coverage']
+
 			players_found.append({
 				'team': {
 					'color': team_color_name,
@@ -263,11 +291,12 @@ while True:
 					'percent': player_found['player_color_percent']
 				},
 				#'contour': contour,
-				'projectiles': projectiles_hit_contour
+				'projectiles': projectiles_hit_contour,
+				'player_color_coverage_percent': player_found['player_color_coverage'] * team_color_multiplier
 			})
 			
-			print 'Found player color:', player_found['player_color'], player_found['player_color_percent']
-			print 'Hit by', len(projectiles_hit_contour), 'projectile(s)'
+			print 'Found player color:', player_found['player_color'], '(', player_found['player_color_percent'], '%) in', team_color_name, 'team'
+			print 'Hit by', len(projectiles_hit_contour), 'projectile(s) in contour', contour
 			
 			# draw contours
 			#cv2.drawContours(contourned, contours, -1, (128,255,0), 1)
@@ -283,33 +312,11 @@ while True:
 
 	print '+++++++++++++ RESULT'
 	print players_found
-	players_found_filtered = []
+	players_filtered = filterByTeamCoverage(players_found)
 	
-	# now we apply a filter to remove lowest player team area coverage
-	# since the script could return more than one found player for the same projectile
-	# this happens because inRange could detect a player team color from a player color pattern
-	for (pi1, player1) in enumerate(players_found):
-		add = True
-		for (pi2, player2) in enumerate(players_found):
-			if pi1 == pi2:
-				continue
-
-			if player1['team']['coverage'] > player2['team']['coverage']:
-				continue
-
-			# check to see if any projectile in player1 is inside player2 projectiles
-			if not any(True for x in player1['projectiles'] if x in player2['projectiles']):
-				continue
-
-			add = False
-			break
-		
-		if add:
-			players_found_filtered.append(player1)
-				
 
 	print '+++++++++++ FINAL'
-	print players_found_filtered
+	print players_filtered
 
 	# check for ESC key
 	k = cv2.waitKey(5) & 0xFF
